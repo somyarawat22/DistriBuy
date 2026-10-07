@@ -1,0 +1,144 @@
+services:
+
+  node1:
+    image: postgres:17
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ecommerce_node1
+
+    ports:
+      - "5433:5432"
+
+    volumes:
+      - node1_data:/var/lib/postgresql/data
+      - ./database/node1/init:/docker-entrypoint-initdb.d
+      - ./replication:/replication
+      - ./database/node1/config/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./database/node1/config/pg_hba.conf/pg_hba.conf:/etc/postgresql/pg_hba.conf
+
+    command:
+      - postgres
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
+      - -c
+      - hba_file=/etc/postgresql/pg_hba.conf
+
+    networks:
+      - ecommerce_network
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ecommerce_node1 && psql -U postgres -d ecommerce_node1 -c 'SELECT 1' > /dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+
+  node2:
+    image: postgres:17
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ecommerce_node2
+
+    ports:
+      - "5434:5432"
+
+    volumes:
+      - node2_data:/var/lib/postgresql/data
+      - ./database/node2/init:/docker-entrypoint-initdb.d
+      - ./replication:/replication
+      - ./database/node2/config/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./database/node2/config/pg_hba.conf/pg_hba.conf:/etc/postgresql/pg_hba.conf
+
+    command:
+      - postgres
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
+      - -c
+      - hba_file=/etc/postgresql/pg_hba.conf
+
+    networks:
+      - ecommerce_network
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ecommerce_node2 && psql -U postgres -d ecommerce_node2 -c 'SELECT 1' > /dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+
+  node3:
+    image: postgres:17
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ecommerce_node3
+
+    ports:
+      - "5435:5432"
+
+    volumes:
+      - node3_data:/var/lib/postgresql/data
+      - ./database/node3/init:/docker-entrypoint-initdb.d
+      - ./replication:/replication
+      - ./database/node3/config/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./database/node3/config/pg_hba.conf/pg_hba.conf:/etc/postgresql/pg_hba.conf
+
+    command:
+      - postgres
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
+      - -c
+      - hba_file=/etc/postgresql/pg_hba.conf
+
+    networks:
+      - ecommerce_network
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ecommerce_node3 && psql -U postgres -d ecommerce_node3 -c 'SELECT 1' > /dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+
+  coordinator:
+    build:
+      context: ./coordinator
+
+    depends_on:
+      node1:
+        condition: service_healthy
+      node2:
+        condition: service_healthy
+      node3:
+        condition: service_healthy
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+    networks:
+      - ecommerce_network
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/coordinator", "--once"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+
+volumes:
+  node1_data:
+  node2_data:
+  node3_data:
+
+
+networks:
+  ecommerce_network:
+    driver: bridge

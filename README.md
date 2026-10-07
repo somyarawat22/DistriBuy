@@ -2,7 +2,7 @@
 
 DistriBuy is a local distributed-database demonstration for an e-commerce system. It runs three independent PostgreSQL 17 services and a C++ coordinator in Docker Compose.
 
-This milestone demonstrates:
+This milestone demonstrates: 
 
 - Domain partitioning across three database nodes
 - Seeded users, products, inventory, and order tables

@@ -30,3 +30,12 @@ ON orders(user_id);
 
 CREATE INDEX idx_order_items_order
 ON order_items(order_id);
+
+INSERT INTO orders (user_id, total_amount, status)
+VALUES (2, 2499.00, 'CONFIRMED');
+
+INSERT INTO order_items (order_id, product_id, quantity, price)
+VALUES (1, 1, 1, 2499.00);
+
+INSERT INTO payments (order_id, amount, status, transaction_reference)
+VALUES (1, 2499.00, 'PAID', 'DEMO-PAY-0001');

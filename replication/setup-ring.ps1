@@ -62,6 +62,11 @@ foreach ($service in @('node1', 'node2', 'node3')) {
 foreach ($link in $replicationLinks) {
     Get-Content -Raw (Join-Path $repoRoot $link.SchemaFile) | docker compose exec -T $link.TargetService psql -U postgres -d $link.TargetDatabase
 
+    if ($link.SourceService -eq 'node1') {
+        docker compose exec -T node1 psql -U postgres -d ecommerce_node1 -c "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE"
+        docker compose exec -T node2 psql -U postgres -d ecommerce_node2 -c "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE"
+    }
+
     docker compose exec -T $link.SourceService psql -U postgres -d $link.SourceDatabase -c "GRANT USAGE ON SCHEMA public TO $replicationUser; GRANT SELECT ON TABLE $($link.Tables) TO $replicationUser"
 
     $publicationExists = docker compose exec -T $link.SourceService psql -U postgres -d $link.SourceDatabase -tAc "SELECT 1 FROM pg_publication WHERE pubname = '$($link.SourcePublication)'"

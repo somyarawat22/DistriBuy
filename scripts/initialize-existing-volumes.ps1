@@ -21,6 +21,10 @@ foreach ($node in $nodes) {
     if ($tableExists.Trim() -ne '1') {
         docker compose exec -T $node.Service psql -U postgres -d $node.Database -f /docker-entrypoint-initdb.d/01_schema.sql
     }
+
+    if ($node.Service -eq 'node1' -or $node.Service -eq 'node2') {
+        docker compose exec -T $node.Service psql -U postgres -d $node.Database -c "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE"
+    }
 }
 
 docker compose ps

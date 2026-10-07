@@ -22,10 +22,16 @@ INSERT INTO products
 VALUES
 ('Running Shoes', 'Lightweight running shoes', 2499.00, 'Shoes'),
 ('Hoodie', 'Cotton oversized hoodie', 1499.00, 'Clothing'),
-('Backpack', 'Water resistant backpack', 1999.00, 'Bags');
+('Backpack', 'Water resistant backpack', 1999.00, 'Bags'),
+('Smart Watch', 'Fitness tracking smartwatch', 3299.00, 'Electronics'),
+('Laptop Stand', 'Adjustable aluminum laptop stand', 1799.00, 'Office'),
+('Coffee Maker', 'Compact filter coffee maker', 2199.00, 'Home');
 
 INSERT INTO inventory (product_id, quantity)
 VALUES
 (1, 10),
 (2, 25),
-(3, 15);
+(3, 15),
+(4, 8),
+(5, 12),
+(6, 6);

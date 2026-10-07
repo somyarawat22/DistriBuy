@@ -48,13 +48,16 @@ foreach ($node in $nodes) {
 Write-Section 'Coordinator Health and Routing'
 docker compose exec -T coordinator /usr/local/bin/coordinator --once
 
+Write-Section 'Coordinator Store View'
+docker compose exec -T coordinator /usr/local/bin/coordinator --demo
+
 Write-Section 'Replication Slots'
 foreach ($node in $nodes) {
     Invoke-NodeSql $node.Service $node.Database "SELECT slot_name, slot_type, active FROM pg_replication_slots"
 }
 
 Write-Section 'Seed Data Snapshot'
-Invoke-NodeSql 'node1' 'ecommerce_node1' "SELECT user_id, name, email FROM users ORDER BY user_id"
+Invoke-NodeSql 'node1' 'ecommerce_node1' "SELECT user_id, name, email, CASE WHEN is_admin THEN 'ADMIN' ELSE 'CUSTOMER' END AS account_type FROM users ORDER BY user_id"
 Invoke-NodeSql 'node2' 'ecommerce_node2' "SELECT p.product_id, p.name, p.price, i.quantity FROM products p JOIN inventory i USING (product_id) ORDER BY p.product_id"
 Invoke-NodeSql 'node3' 'ecommerce_node3' "SELECT order_id, user_id, total_amount, status FROM orders ORDER BY order_id"
 

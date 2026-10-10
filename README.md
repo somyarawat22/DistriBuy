@@ -177,5 +177,158 @@ This project touches the same skills backend and infrastructure interviews test:
 - fault tolerance
 - failover design
 
+## MVP and Stretch Goals
+
+### MVP
+
+The core MVP is:
+
+- 3 PostgreSQL-backed nodes: Users, Products & Inventory, and Orders & Payments
+- Coordinator
+- TCP communication
+- partitioning by business domain
+- ring replication using PostgreSQL logical replication
+- distributed transactions using PostgreSQL 2PC
+- concurrency control using PostgreSQL locking, understood through 2PL
+- heartbeat-based failure detection and failover
+- recovery and reintegration of restarted nodes
+
+### Stretch Goals
+
+These are intentionally deferred until the MVP is complete and should be implemented only if time permits:
+
+- automatic leader election
+- dynamic sharding
+- multi-machine deployment
+
+## Scope Boundaries
+
+Complex recovery optimizations remain optional and can be considered after the MVP and stretch goals.
+
+## Repository structure
+
+```text
+ShardCore/
+├── README.md
+├── core/
+│   └── src/
+│       ├── main.cpp          # per-node process (libpqxx connection to its own DB)
+│       ├── coordinator.cpp   # Coordinator: routing, failover, 2PC, heartbeat monitoring
+│       └── cluster.h         # shared topology / replica-map definitions
+├── api/
+│   ├── server.js             # Express REST API: auth, routing, failover, 2PC
+│   └── package.json
+├── frontend/
+│   ├── index.html            # shell; loads the files below
+│   ├── css/styles.css
+│   └── js/                   # api.js, auth.js, components.js, app.js (React via CDN, no build step)
+├── scripts/
+│   ├── setup_replication.sh  # first-time setup of the logical replication ring
+│   ├── reset_catalog.sh      # replaces ALL products with 22 sample items
+│   └── seed_products.sh      # adds a few extra sample products
+├── docs/
+│   └── partitioning.md       # partitioning strategy and trade-offs
+└── .gitignore
+```
+
+## Current local build and run
+
+Everything runs on WSL2/Ubuntu against three local PostgreSQL clusters on ports 5433, 5434 and 5435.
+
+### Prerequisites (one-time)
+
+- Packages: `postgresql`, `build-essential`, `libpqxx-dev`, `nodejs`, `npm`, `python3`.
+- Three clusters (for example `sudo pg_createcluster 18 node1 -p 5433`, then node2 on 5434 and node3 on 5435), each with `wal_level = logical` and `max_prepared_transactions` greater than 0 in its `postgresql.conf`, then restarted.
+- The `postgres` user on each node uses the password `kvara` (local development only, see Known limitations).
+- The base tables, one per node:
+
+```sql
+-- node1 (5433)
+CREATE TABLE users (id SERIAL PRIMARY KEY, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL,
+                    created_at TIMESTAMP DEFAULT NOW(), password TEXT);
+-- node2 (5434)
+CREATE TABLE products (id SERIAL PRIMARY KEY, name TEXT NOT NULL, price NUMERIC(10,2) NOT NULL,
+                       stock INT NOT NULL DEFAULT 0);
+-- node3 (5435)
+CREATE TABLE orders (id SERIAL PRIMARY KEY, user_id INT NOT NULL, product_id INT NOT NULL,
+                     quantity INT NOT NULL, status TEXT NOT NULL DEFAULT 'pending',
+                     created_at TIMESTAMP DEFAULT NOW(), delivery_address TEXT,
+                     payment_method TEXT DEFAULT 'COD');
+```
+
+- The replication ring: run `scripts/setup_replication.sh` once, for first-time setup only. It drops and recreates every publication and subscription, so do not re-run it on a cluster whose replication is already healthy (the script's header explains this).
+
+### Run
+
+**1. Coordinator** (C++): one-shot demo, or continuous monitoring.
+
+```bash
+g++ -Wall -Wextra core/src/coordinator.cpp -o core/src/coordinator -lpqxx -lpq
+./core/src/coordinator           # health check, routed queries, a 2PC order demo
+./core/src/coordinator --watch   # continuous heartbeat monitoring (Ctrl+C to stop)
+```
+
+**2. REST API** (http://localhost:4000):
+
+```bash
+cd api && npm install && node server.js
+```
+
+**3. Frontend** (http://localhost:8080). The page loads separate JS/CSS files, so it must be served over HTTP; opening `index.html` directly from disk will not work.
+
+```bash
+cd frontend && python3 -m http.server 8080
+```
+
+After changing a frontend file, hard-refresh the browser (Ctrl+Shift+R), otherwise it may keep showing the cached old version.
+
+**4. Sample catalog** (optional): `./scripts/reset_catalog.sh` replaces all products with 22 sample items. It truncates the `products` table first.
+
+**Accounts:** the admin login is `admin` / `admin123`. Consumers create their own account with **Sign Up**.
+
+### Failover demo
+
+With the API and frontend running, log in as admin and open **Overview**, then in a terminal:
+
+```bash
+sudo pg_ctlcluster 18 node2 stop     # kill the Products node
+```
+
+Within a few seconds the Products node shows **DOWN**, while the cluster stays **AVAILABLE** (2 of 3 nodes, quorum 2). The storefront still lists products, now served from node3's replicated copy (the admin tables are tagged "served from replica"), but checkout is refused, because 2PC needs the Products primary. Then:
+
+```bash
+sudo pg_ctlcluster 18 node2 start    # bring it back
+```
+
+Health returns to all UP and normal routing resumes. `./core/src/coordinator --watch` prints the same DOWN and RECOVERED transitions in the terminal.
+
+## Development roadmap
+
+1. ✅ define node and cluster topology
+2. ✅ implement sharding model (domain-based partitioning: each table lives on exactly one primary node)
+3. ✅ connect the Coordinator to PostgreSQL-backed nodes (via `libpqxx`, over TCP)
+4. ✅ add ring replication and replication-status monitoring
+5. ✅ add distributed transactions with PostgreSQL 2PC
+6. ✅ add concurrency control (Postgres row-level locking, `FOR UPDATE`), failure detection, failover, and recovery
+7. ✅ build the REST API (with authentication and role-based authorization)
+8. ✅ build the frontend: storefront (search, cart, checkout, order tracking) and admin dashboard
+9. optional, only if time permits: the stretch goals above
+
+## Known limitations
+
+- **Authentication is deliberately basic.** Real server-side checks exist (bcrypt-hashed passwords, admin-only routes enforced by the API, consumers limited to their own orders, `GET /users` admin-only and free of password hashes). But sessions are random tokens held in the API process's memory, so they are lost when the API restarts and never expire; tokens are kept in the browser's `localStorage`; the admin credentials and the database password are hardcoded in the source for local development; and there is no HTTPS, rate limiting, password-strength rule or password reset.
+- **The Coordinator/API is a single point of failure.** The database nodes are fault-tolerant; the process that coordinates them is not. If the API dies between `PREPARE TRANSACTION` and `COMMIT PREPARED`, a prepared transaction can be left in doubt (visible in `pg_prepared_xacts`), and nothing resolves it automatically. A recovery sweep on startup would fix this and is out of scope.
+- **Failover is read-only.** A dead node's data can still be read from its replica, but writes to that domain are refused until its primary returns (replicas are read-only subscribers), so placing an order requires both the Orders and Products primaries. There is no leader election or replica promotion.
+- **Replica schemas are maintained by hand.** Logical replication copies data, not schema changes. If a column is added to a primary table, add it to the replica table with `ALTER TABLE`; re-running `setup_replication.sh` does not fix a mismatch and would tear down healthy replication.
+- **No cross-node referential integrity.** `orders.user_id` and `orders.product_id` are not foreign keys (Postgres cannot enforce them across separate instances; see `docs/partitioning.md`), so deleting a user or product leaves historical orders pointing at an id that no longer exists.
+- **Recovery relies on PostgreSQL.** A restarted node replays its own WAL and logical replication catches it up; the Coordinator's heartbeat notices the node answering again and resumes routing to it, but does not itself measure replication lag.
+- **Scope of testing.** Built and verified as a single-machine demo with three PostgreSQL instances; it has not been load-tested or run across multiple machines.
+- **Storefront cosmetics.** The crossed-out "original price" and "12% off" are computed from the real price for display only; there is no discount logic. The cart lives in the browser and is lost on refresh. Payment is Cash on Delivery only.
+
+## License
+
+No license has been selected yet.
+
+## Contributing
 
 Contributions are welcome as the project grows. For now, the work is focused on learning by building the system incrementally and validating each step with small code changes.

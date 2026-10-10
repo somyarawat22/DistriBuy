@@ -26,3 +26,18 @@ public:
             " dbname=postgres";
         try_reconnect();
     }
+// Attempts to (re)establish the connection. Used both at startup and
+    // by the heartbeat loop when a previously-dead node might have come
+    // back up — without this, a node that failed once would stay marked
+    // dead forever, even after a real recovery.
+    bool try_reconnect() {
+        try {
+            conn_ = std::make_unique<pqxx::connection>(conn_str_);
+            alive_ = true;
+            return true;
+        } catch (const std::exception&) {
+            conn_.reset();
+            alive_ = false;
+            return false;
+        }
+    }

@@ -33,9 +33,6 @@ public:
             return false;
         }
     }
-// A real liveness check: actually runs a trivial query against the
-    // node rather than just checking whether the last-known connection
-    // object still looks open. This is what the heartbeat loop calls
     
     bool ping() {
         if (!conn_ || !conn_->is_open()) {

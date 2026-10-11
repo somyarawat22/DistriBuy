@@ -3,8 +3,7 @@
 const { useState: useState4, useEffect: useEffect4 } = React;
 
 function App() {
-  const [session, setSession] = useState4(undefined); // undefined = still checking, null = logged out
-
+  const [session, setSession] = useState4(undefined);
   useEffect4(() => {
     setSession(loadSession());
   }, []);
@@ -30,8 +29,13 @@ function App() {
       <div className="container">
         <div className="topbar">
           <div>
-            <h1 style={{marginBottom: 0}}>ShardCore</h1>
-            <p className="subtitle" style={{marginBottom: 0}}>Admin / System Dashboard</p>
+            <div className="brand-lockup">
+              <span className="brand-mark">D</span>
+              <div>
+                <h1 style={{marginBottom: 0}}>DistriBuy</h1>
+                <p className="subtitle" style={{marginBottom: 0}}>Operations center</p>
+              </div>
+            </div>
           </div>
           <div style={{display: "flex", alignItems: "center", gap: 14}}>
             <span className="who">Logged in as admin</span>

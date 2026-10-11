@@ -91,12 +91,17 @@ function LoginPage({ onAuthenticated }) {
   return (
     <div className="login-shell">
       <div className="login-box panel">
-        <h1 style={{fontSize: "1.3rem"}}>ShardCore</h1>
-        <p className="subtitle">Distributed, fault-tolerant PostgreSQL e-commerce backend</p>
+        <div className="login-brand">
+          <span className="brand-mark">D</span>
+          <div>
+            <h1 style={{fontSize: "1.3rem"}}>DistriBuy</h1>
+            <p className="subtitle">A smarter way to shop, manage, and grow.</p>
+          </div>
+        </div>
 
         <div className="role-toggle">
-          <div className={role === "consumer" ? "active" : ""} onClick={() => setRole("consumer")}>🛍️ Consumer</div>
-          <div className={role === "admin" ? "active" : ""} onClick={() => setRole("admin")}>⚙️ Admin</div>
+          <div className={role === "consumer" ? "active" : ""} onClick={() => setRole("consumer")}>Consumer</div>
+          <div className={role === "admin" ? "active" : ""} onClick={() => setRole("admin")}>Admin</div>
         </div>
 
         {role === "consumer" ? (

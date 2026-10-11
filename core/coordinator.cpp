@@ -33,3 +33,24 @@ public:
             return false;
         }
     }
+// A real liveness check: actually runs a trivial query against the
+    // node rather than just checking whether the last-known connection
+    // object still looks open. This is what the heartbeat loop calls
+    // periodically. If the node is currently marked dead, this also
+    // attempts a reconnect, so recovery is detected automatically.
+    bool ping() {
+        if (!conn_ || !conn_->is_open()) {
+            alive_ = try_reconnect();
+            if (!alive_) {
+                return false;
+            }
+        }
+        try {
+            pqxx::nontransaction n(*conn_);
+            n.exec("SELECT 1");
+            alive_ = true;
+        } catch (const std::exception&) {
+            alive_ = false;
+        }
+        return alive_;
+    }

@@ -8,7 +8,6 @@
 #include <chrono>
 #include "cluster.h"
 
-
 class NodeConnection {
 public:
     NodeConnection(const NodeConfig& config, const std::string& user, const std::string& password)

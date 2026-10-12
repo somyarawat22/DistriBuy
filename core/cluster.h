@@ -22,6 +22,7 @@ inline const char* domain_name(NodeDomain domain) {
     }
     return "Unknown";
 }
+
 inline std::string table_for_domain(NodeDomain domain) {
     switch (domain) {
         case NodeDomain::Users:
@@ -33,3 +34,17 @@ inline std::string table_for_domain(NodeDomain domain) {
     }
     return "unknown";
 }
+
+struct NodeConfig {
+    int node_id;
+    std::string host;
+    int port;
+    NodeDomain domain;
+    bool is_valid() const {
+        return node_id > 0 && !host.empty() && port > 0 && port <= 65535;
+    }
+    std::string endpoint() const {
+        return host + ':' + std::to_string(port);
+    }
+};
+

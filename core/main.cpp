@@ -65,3 +65,15 @@ const NodeConfig* find_peer(const std::vector<NodeConfig>& peers, int node_id) {
     }
     return nullptr;
 }
+
+bool peers_are_valid(const NodeConfig& local,
+                     const std::vector<NodeConfig>& peers) {
+    std::unordered_set<int> peer_ids;
+    for (const NodeConfig& peer : peers) {
+        if (!peer.is_valid() || peer.node_id == local.node_id ||
+            !peer_ids.insert(peer.node_id).second) {
+            return false;
+        }
+    }
+    return true;
+}

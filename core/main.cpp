@@ -30,3 +30,50 @@ const char* domain_name(NodeDomain domain) {
     }
     return "Unknown";
 }
+
+const char* tx_state_name(TxState state) {
+    switch (state) {
+        case TxState::Begin:
+            return "begin";
+        case TxState::Commit:
+            return "commit";
+        case TxState::Abort:
+            return "abort";
+    }
+    return "unknown";
+}
+
+struct NodeConfig {
+    int node_id;
+    std::string host;
+    int port;
+    NodeDomain domain;
+    bool is_valid() const {
+        return node_id > 0 && !host.empty() && port > 0 && port <= 65535;
+    }
+
+    std::string endpoint() const {
+        return host + ':' + std::to_string(port);
+    }
+};
+
+const NodeConfig* find_peer(const std::vector<NodeConfig>& peers, int node_id) {
+    for (const NodeConfig& peer : peers) {
+        if (peer.node_id == node_id) {
+            return &peer;
+        }
+    }
+    return nullptr;
+}
+
+bool peers_are_valid(const NodeConfig& local,
+                     const std::vector<NodeConfig>& peers) {
+    std::unordered_set<int> peer_ids;
+    for (const NodeConfig& peer : peers) {
+        if (!peer.is_valid() || peer.node_id == local.node_id ||
+            !peer_ids.insert(peer.node_id).second) {
+            return false;
+        }
+    }
+    return true;
+}

@@ -22,6 +22,7 @@ inline const char* domain_name(NodeDomain domain) {
     }
     return "Unknown";
 }
+
 inline std::string table_for_domain(NodeDomain domain) {
     switch (domain) {
         case NodeDomain::Users:
@@ -33,3 +34,38 @@ inline std::string table_for_domain(NodeDomain domain) {
     }
     return "unknown";
 }
+
+struct NodeConfig {
+    int node_id;
+    std::string host;
+    int port;
+    NodeDomain domain;
+    bool is_valid() const {
+        return node_id > 0 && !host.empty() && port > 0 && port <= 65535;
+    }
+    std::string endpoint() const {
+        return host + ':' + std::to_string(port);
+    }
+};
+
+struct ClusterMetadata {
+    std::vector<NodeConfig> nodes;
+
+    const NodeConfig* find_by_domain(NodeDomain domain) const {
+        for (const auto& candidate : nodes) {
+            if (candidate.domain == domain) {
+                return &candidate;
+            }
+        }
+        return nullptr;
+    }
+
+    const NodeConfig* find_by_id(int node_id) const {
+        for (const auto& candidate : nodes) {
+            if (candidate.node_id == node_id) {
+                return &candidate;
+            }
+        }
+        return nullptr;
+    }
+};

@@ -48,9 +48,8 @@ public:
             alive_ = false;
         }
         return alive_;
-        // Fast, cached status — does NOT hit the network. Reflects the
-    // result of the most recent ping() (or the initial connection
-    // attempt if ping() has never been called yet).
+    }
+    
     bool is_alive() const {
         return alive_;
     }
@@ -63,10 +62,7 @@ public:
         return *conn_;
     }
 
-    // Queries a specific table on this connection. Generalized (rather than
-    // always querying this node's OWN domain table) so a replica node's
-    // connection can also be used to read another domain's replicated data
-    // during failover.
+    
     std::size_t query_table(const std::string& table) {
         if (!is_alive()) {
             std::cerr << "  [ERROR] Node " << config_.node_id << " is not connected.\n";
@@ -113,4 +109,3 @@ public:
             );
         }
         }
-    }

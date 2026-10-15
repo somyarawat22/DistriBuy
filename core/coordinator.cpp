@@ -109,11 +109,6 @@ public:
             );
         }
         }
-// Routes a request to the node that owns the given domain. If that
-    // node is unreachable, automatically falls back to the node that
-    // holds a replicated copy of this domain's data (per the ring
-    // topology), so a single node failure doesn't make the data
-    // unavailable for reads — only writes still require the real owner.
     void route_and_query(NodeDomain domain) {
         auto it = connections_.find(domain);
         if (it == connections_.end()) {

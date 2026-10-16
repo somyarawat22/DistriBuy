@@ -244,10 +244,6 @@ try {
         }
     }
 
-    // Pings every node once. This is what a continuous heartbeat loop
-    // calls on each tick — it's the piece that lets the Coordinator
-    // notice BOTH a node dying AND a node recovering, without needing
-    // to be restarted.
     void heartbeat_tick() {
         for (auto& [domain, conn] : connections_) {
             bool was_alive = conn->is_alive();

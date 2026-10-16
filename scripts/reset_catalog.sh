@@ -1,8 +1,5 @@
-
 #!/bin/bash
-
 sudo -u postgres psql -p 5434 -c "TRUNCATE TABLE products RESTART IDENTITY;"
-
 sudo -u postgres psql -p 5434 -c "INSERT INTO products (name, price, stock) VALUES
   ('Wireless Mouse', 799.00, 15),
   ('Mechanical Keyboard', 2499.00, 6),
@@ -26,5 +23,4 @@ sudo -u postgres psql -p 5434 -c "INSERT INTO products (name, price, stock) VALU
   ('Mini LED Desk Lamp', 899.00, 16),
   ('Portable Mini Projector', 12999.00, 2),
   ('Wi-Fi Smart Plug', 699.00, 22);"
-
 sudo -u postgres psql -p 5434 -c "SELECT id, name, price, stock FROM products ORDER BY id;"

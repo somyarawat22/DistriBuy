@@ -2,3 +2,29 @@
 #!/bin/bash
 
 sudo -u postgres psql -p 5434 -c "TRUNCATE TABLE products RESTART IDENTITY;"
+
+sudo -u postgres psql -p 5434 -c "INSERT INTO products (name, price, stock) VALUES
+  ('Wireless Mouse', 799.00, 15),
+  ('Mechanical Keyboard', 2499.00, 6),
+  ('USB-C Hub (7-in-1)', 1299.00, 10),
+  ('27-inch 4K Monitor', 15999.00, 4),
+  ('Adjustable Laptop Stand', 899.00, 20),
+  ('1080p HD Webcam', 2199.00, 8),
+  ('Noise-Cancelling Headphones', 6499.00, 2),
+  ('External SSD 1TB', 4999.00, 10),
+  ('Portable Bluetooth Speaker', 2199.00, 0),
+  ('Fitness Smartwatch', 7999.00, 5),
+  ('True Wireless Earbuds', 3499.00, 12),
+  ('Extended Gaming Mouse Pad', 499.00, 25),
+  ('20000mAh Power Bank', 1999.00, 18),
+  ('USB Condenser Microphone', 3299.00, 7),
+  ('Ergonomic Office Chair', 8999.00, 3),
+  ('Water-Resistant Laptop Backpack', 1799.00, 14),
+  ('15W Wireless Charging Pad', 1099.00, 9),
+  ('HDMI 2.1 Cable (2m)', 399.00, 30),
+  ('Graphics Drawing Tablet', 5499.00, 4),
+  ('Mini LED Desk Lamp', 899.00, 16),
+  ('Portable Mini Projector', 12999.00, 2),
+  ('Wi-Fi Smart Plug', 699.00, 22);"
+
+sudo -u postgres psql -p 5434 -c "SELECT id, name, price, stock FROM products ORDER BY id;"

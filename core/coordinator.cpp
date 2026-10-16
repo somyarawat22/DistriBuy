@@ -195,3 +195,51 @@ public:
         } catch (const std::exception& e) {
             std::cout << "  Orders node: PREPARE failed (" << e.what() << ")\n";
         }
+try {
+            pqxx::work txn(products_conn.raw_connection());
+            pqxx::result r = txn.exec(
+                "SELECT stock FROM products WHERE id = " + std::to_string(product_id) + " FOR UPDATE"
+            );
+            if (r.empty()) {
+                throw std::runtime_error("product not found");
+            }
+            int stock = r[0][0].as<int>();
+            if (stock < quantity) {
+                throw std::runtime_error("insufficient stock (have " + std::to_string(stock) +
+                                          ", need " + std::to_string(quantity) + ")");
+            }
+            txn.exec(
+                "UPDATE products SET stock = stock - " + std::to_string(quantity) +
+                " WHERE id = " + std::to_string(product_id)
+            );
+            txn.exec("PREPARE TRANSACTION '" + txn_products + "'");
+            products_prepared = true;
+            std::cout << "  Products node: PREPARE succeeded\n";
+        } catch (const std::exception& e) {
+            std::cout << "  Products node: PREPARE failed (" << e.what() << ")\n";
+        }
+
+        std::cout << "[2PC] Phase 2: " << ((orders_prepared && products_prepared) ? "COMMIT" : "ABORT") << "\n";
+
+        if (orders_prepared && products_prepared) {
+            pqxx::nontransaction n1(orders_conn.raw_connection());
+            n1.exec("COMMIT PREPARED '" + txn_orders + "'");
+            pqxx::nontransaction n2(products_conn.raw_connection());
+            n2.exec("COMMIT PREPARED '" + txn_products + "'");
+            std::cout << "  Order placed successfully.\n";
+            return true;
+        } else {
+            if (orders_prepared) {
+                pqxx::nontransaction n1(orders_conn.raw_connection());
+                n1.exec("ROLLBACK PREPARED '" + txn_orders + "'");
+                std::cout << "  Rolled back Orders node.\n";
+            }
+            if (products_prepared) {
+                pqxx::nontransaction n2(products_conn.raw_connection());
+                n2.exec("ROLLBACK PREPARED '" + txn_products + "'");
+                std::cout << "  Rolled back Products node.\n";
+            }
+            std::cout << "  Order aborted: no partial changes were made.\n";
+            return false;
+        }
+    }

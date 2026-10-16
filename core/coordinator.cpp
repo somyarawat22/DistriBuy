@@ -222,7 +222,7 @@ try {
         std::cout << "[2PC] Phase 2: " << ((orders_prepared && products_prepared) ? "COMMIT" : "ABORT") << "\n";
 
         if (orders_prepared && products_prepared) {
-            pqxx::nontransaction n1(orders_conn.raw_connection());
+            pqxx::nontransaction n1(orders_conn.raw_connection()); 
             n1.exec("COMMIT PREPARED '" + txn_orders + "'");
             pqxx::nontransaction n2(products_conn.raw_connection());
             n2.exec("COMMIT PREPARED '" + txn_products + "'");

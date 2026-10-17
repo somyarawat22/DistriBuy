@@ -257,3 +257,24 @@ try {
             }
         }
     }
+void print_cluster_health() {
+        std::size_t alive_count = 0;
+        std::cout << "\nCluster health:\n";
+        for (const auto& [domain, conn] : connections_) {
+            bool alive = conn->is_alive();
+            alive_count += alive ? 1 : 0;
+            std::cout << "  " << domain_name(domain) << " node ("
+                       << conn->config().endpoint() << "): "
+                       << (alive ? "UP" : "DOWN") << '\n';
+        }
+        std::size_t total = connections_.size();
+        std::size_t quorum = total / 2 + 1;
+        std::cout << "  " << alive_count << "/" << total << " nodes reachable "
+                   << "(quorum " << quorum << "): "
+                   << (alive_count >= quorum ? "AVAILABLE" : "UNAVAILABLE") << "\n\n";
+    }
+
+private:
+    std::unordered_map<NodeDomain, std::unique_ptr<NodeConnection>> connections_;
+    std::unordered_map<NodeDomain, NodeDomain> replica_map_;
+};

@@ -69,3 +69,31 @@ struct ClusterMetadata {
         return nullptr;
     }
 };
+
+inline ClusterMetadata build_cluster_metadata() {
+    return ClusterMetadata{{
+        {1, "127.0.0.1", 5433, NodeDomain::Users},
+        {2, "127.0.0.1", 5434, NodeDomain::Products},
+        {3, "127.0.0.1", 5435, NodeDomain::Orders}
+    }};
+}
+
+// The replication ring: each domain's data is also replicated to the node
+// that owns the domain on the right. This matches scripts/setup_replication.sh:
+//   Users (node1)    -> replicated to -> node2 (Products' node)
+//   Products (node2) -> replicated to -> node3 (Orders' node)
+//   Orders (node3)   -> replicated to -> node1 (Users' node)
+// So if a domain's PRIMARY node is down, its data can still be read from
+// the node that owns the domain this map points to.
+inline std::unordered_map<NodeDomain, NodeDomain> build_replica_map() {
+    return {
+        {NodeDomain::Users, NodeDomain::Products},
+        {NodeDomain::Products, NodeDomain::Orders},
+        {NodeDomain::Orders, NodeDomain::Users}
+    };
+}
+
+inline const char* PG_USER = "postgres";
+inline const char* PG_PASSWORD = "kvara";
+
+#endif // SHARDCORE_CLUSTER_H

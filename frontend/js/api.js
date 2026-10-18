@@ -1,8 +1,7 @@
-
 const API_BASE = "http://localhost:4000";
-const SESSION_KEY_TOKEN = "shardcore_token";
-const SESSION_KEY_ROLE = "shardcore_role";
-const SESSION_KEY_USER = "shardcore_user";
+const SESSION_KEY_TOKEN = "distribuy_token";
+const SESSION_KEY_ROLE = "distribuy_role";
+const SESSION_KEY_USER = "distribuy_user";
 
 function saveSession(token, role, user) {
   localStorage.setItem(SESSION_KEY_TOKEN, token);
@@ -22,33 +21,19 @@ function loadSession() {
   const role = localStorage.getItem(SESSION_KEY_ROLE);
   const userRaw = localStorage.getItem(SESSION_KEY_USER);
   if (!token || !role) return null;
-  let user = null;
-  try {
-    user = userRaw ? JSON.parse(userRaw) : null;
-  } catch (e) {
-    clearSession();
-    return null;
-  }
-  return { token, role, user };
+  return { token, role, user: userRaw ? JSON.parse(userRaw) : null };
 }
-
 
 async function apiFetch(path, options = {}) {
   const session = loadSession();
   const headers = Object.assign({ "Content-Type": "application/json" }, options.headers || {});
   if (session && session.token) headers["Authorization"] = "Bearer " + session.token;
 
-  let res;
-  try {
-    res = await fetch(API_BASE + path, Object.assign({}, options, { headers }));
-  } catch (e) {
-    throw new Error("The DistriBuy service is unavailable. Start the API server on port 4000 and try again.");
-  }
+  const res = await fetch(API_BASE + path, Object.assign({}, options, { headers }));
   let json = {};
   try { json = await res.json(); } catch (e) { /* no body */ }
 
   if (!res.ok) {
-    if (res.status === 401) clearSession();
     const err = new Error(json.error || json.message || ("Request failed with status " + res.status));
     err.status = res.status;
     err.data = json;
@@ -56,8 +41,6 @@ async function apiFetch(path, options = {}) {
   }
   return json;
 }
-
-
 function useApi(path, intervalMs) {
   const { useState, useEffect, useCallback } = React;
   const [data, setData] = useState(null);

@@ -77,3 +77,13 @@ bool peers_are_valid(const NodeConfig& local,
     }
     return true;
 }
+
+struct LivenessInfo {
+    long last_heartbeat_time = 0;
+    bool has_heartbeat = false;
+
+    void mark_alive(long now) {
+        last_heartbeat_time = now;
+        has_heartbeat = true;
+    }
+};

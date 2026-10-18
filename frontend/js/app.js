@@ -1,9 +1,8 @@
-
-
 const { useState: useState4, useEffect: useEffect4 } = React;
 
 function App() {
   const [session, setSession] = useState4(undefined);
+
   useEffect4(() => {
     setSession(loadSession());
   }, []);
@@ -29,13 +28,8 @@ function App() {
       <div className="container">
         <div className="topbar">
           <div>
-            <div className="brand-lockup">
-              <span className="brand-mark">D</span>
-              <div>
-                <h1 style={{marginBottom: 0}}>DistriBuy</h1>
-                <p className="subtitle" style={{marginBottom: 0}}>Operations center</p>
-              </div>
-            </div>
+            <h1 style={{marginBottom: 0}}>Distribuy</h1>
+            <p className="subtitle" style={{marginBottom: 0}}>Admin / System Dashboard</p>
           </div>
           <div style={{display: "flex", alignItems: "center", gap: 14}}>
             <span className="who">Logged in as admin</span>
@@ -49,5 +43,4 @@ function App() {
 
   return <ShopView userName={session.user ? session.user.name : "there"} onLogout={handleLogout} />;
 }
-
 ReactDOM.createRoot(document.getElementById("root")).render(<App />);

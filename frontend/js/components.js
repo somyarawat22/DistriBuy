@@ -1,17 +1,43 @@
-
 const { useState: useState2, useEffect: useEffect2 } = React;
+const EMOJI_KEYWORDS = [
+  ["mouse pad", "🎮"],
+  ["mouse", "🖱️"],
+  ["keyboard", "⌨️"],
+  ["hub", "🔌"],
+  ["monitor", "🖥️"],
+  ["laptop stand", "💻"],
+  ["backpack", "🎒"],
+  ["webcam", "📷"],
+  ["camera", "📷"],
+  ["headphone", "🎧"],
+  ["earbud", "🎵"],
+  ["speaker", "🔊"],
+  ["ssd", "💾"],
+  ["drive", "💾"],
+  ["smartwatch", "⌚"],
+  ["watch", "⌚"],
+  ["power bank", "🔋"],
+  ["microphone", "🎙️"],
+  ["chair", "🪑"],
+  ["charging pad", "⚡"],
+  ["charger", "⚡"],
+  ["hdmi", "📺"],
+  ["cable", "🔗"],
+  ["tablet", "🎨"],
+  ["lamp", "💡"],
+  ["light", "💡"],
+  ["projector", "📽️"],
+  ["plug", "🔌"],
+  ["phone", "📱"],
+];
 
-
-function productInitials(name) {
-  return (name || "Product")
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map(word => word[0].toUpperCase())
-    .join("");
+function emojiFor(name) {
+  const lower = (name || "").toLowerCase();
+  for (const [keyword, emoji] of EMOJI_KEYWORDS) {
+    if (lower.includes(keyword)) return emoji;
+  }
+  return "📦";
 }
-
-
 function fakeMrp(price) { return (Number(price) * 1.12).toFixed(2); }
 
 // ============== SHOP: header, product grid, cart drawer ==============
@@ -27,7 +53,6 @@ function Stepper({ value, min, max, onChange }) {
 }
 
 function ShopProductCard({ product, cartQty, onAddToCart }) {
-
   const remaining = Math.max(0, product.stock - cartQty);
   const [qty, setQty] = useState2(remaining > 0 ? 1 : 0);
 
@@ -43,7 +68,7 @@ function ShopProductCard({ product, cartQty, onAddToCart }) {
 
   return (
     <div className="shop-card">
-      <div className="thumb"><span className="product-initials">{productInitials(product.name)}</span></div>
+      <div className="thumb">{emojiFor(product.name)}</div>
       <p className="name">{product.name}</p>
       <div className="price-row">
         <span className="price">₹{Number(product.price).toFixed(2)}</span>
@@ -62,7 +87,7 @@ function ShopProductCard({ product, cartQty, onAddToCart }) {
 }
 
 function CartDrawer({ cart, onClose, onRemove, onCheckoutDone }) {
-  const [step, setStep] = useState2("review"); // "review" | "address"
+  const [step, setStep] = useState2("review");
   const [address, setAddress] = useState2("");
   const [city, setCity] = useState2("");
   const [pincode, setPincode] = useState2("");
@@ -78,8 +103,6 @@ function CartDrawer({ cart, onClose, onRemove, onCheckoutDone }) {
     setResults(null);
     const fullAddress = `${address}, ${city} - ${pincode} (Phone: ${phone})`;
     const outcomes = [];
-
-
     for (const item of cart) {
       try {
         await apiFetch("/orders", {
@@ -101,7 +124,7 @@ function CartDrawer({ cart, onClose, onRemove, onCheckoutDone }) {
       <div className="cart-overlay" onClick={onClose}></div>
       <div className="cart-drawer">
         <div className="cart-drawer-header">
-          <span>Your Cart <small>({cart.length} items)</small></span>
+          <span>🛒 Your Cart ({cart.length})</span>
           <span className="cart-drawer-close" onClick={onClose}>×</span>
         </div>
         <div className="cart-drawer-body">
@@ -158,21 +181,21 @@ function ShopHeader({ userName, cartCount, onCartClick, onOrdersClick, onLogout,
   return (
     <div className="shop-topbar">
       <div className="shop-topbar-inner">
-        <div className="shop-logo"><span className="shop-logo-mark">D</span><span className="shop-logo-name">DistriBuy</span><small>everything you need, delivered</small></div>
+        <div className="shop-logo">Distribuy<span>distributed. fault-tolerant.</span></div>
         <div className="shop-search">
           <input placeholder="Search products..." value={search} onChange={e => onSearchChange(e.target.value)} />
         </div>
         <div className="shop-user-area">
           <span className="greet">Hi, {userName}</span>
           <span className="shop-logout" onClick={onLogout}>Logout</span>
-          <div className="shop-cart-btn" onClick={onOrdersClick}>My Orders</div>
+          <div className="shop-cart-btn" onClick={onOrdersClick}>📦 My Orders</div>
           <div className="shop-cart-btn" onClick={onCartClick}>
-            Cart
+            🛒 Cart
             {cartCount > 0 && <span className="shop-cart-badge">{cartCount}</span>}
           </div>
         </div>
       </div>
-      <div className="shop-promo"><span>Cash on Delivery</span><span>Free returns within 7 days</span><span>Secure checkout</span></div>
+      <div className="shop-promo">💵 Cash on Delivery on every order · Free returns within 7 days</div>
     </div>
   );
 }
@@ -196,7 +219,7 @@ function OrderHistoryDrawer({ onClose, products }) {
       <div className="cart-overlay" onClick={onClose}></div>
       <div className="cart-drawer">
         <div className="cart-drawer-header">
-          <span>Your Orders</span>
+          <span>📦 Your Orders</span>
           <span className="cart-drawer-close" onClick={onClose}>×</span>
         </div>
         <div className="cart-drawer-body">
@@ -230,7 +253,6 @@ function ShopView({ userName, onLogout }) {
   const [search, setSearch] = useState2("");
 
   const addToCart = (product, qty, remaining) => {
-    
     const safeQty = Math.max(0, Math.min(qty, remaining));
     if (safeQty <= 0) return;
     setCart(prev => {
@@ -295,15 +317,13 @@ function ShopView({ userName, onLogout }) {
   );
 }
 
-// ============== ADMIN / SYSTEM ==============
-
 function ClusterHealth() {
   const { data, error } = useApi("/health", 3000);
-  if (error) return <div className="panel full-width"><h2>Cluster health</h2><div className="result-msg error">Could not reach API: {error}</div></div>;
-  if (!data) return <div className="panel full-width"><h2>Cluster health</h2><p>Loading...</p></div>;
+  if (error) return <div className="panel full-width"><h2>🩺 Cluster Health</h2><div className="result-msg error">Could not reach API: {error}</div></div>;
+  if (!data) return <div className="panel full-width"><h2>🩺 Cluster Health</h2><p>Loading...</p></div>;
   return (
     <div className="panel full-width">
-      <h2>Cluster health <span style={{fontSize: "0.75rem", color: "var(--muted)", fontWeight: 400}}>(auto-refreshing every 3s)</span></h2>
+      <h2>🩺 Cluster Health <span style={{fontSize: "0.75rem", color: "var(--muted)", fontWeight: 400}}>(auto-refreshing every 3s)</span></h2>
       {Object.entries(data.nodes).map(([domain, status]) => (
         <div className="node-row" key={domain}>
           <span style={{textTransform: "capitalize"}}>{domain} node</span>
@@ -384,7 +404,7 @@ function ProductManager({ refreshKey, bump }) {
 
   return (
     <div className="panel full-width">
-      <h2>Manage products</h2>
+      <h2>📦 Manage Products</h2>
       {message && <div className={"result-msg " + (message.ok ? "success" : "error")}>{message.text}</div>}
       {data && data.rows && (
         <table>
@@ -465,7 +485,7 @@ function StatsPanel({ refreshKey }) {
 
   return (
     <div className="full-width">
-      <h2 style={{marginBottom: 12}}>Overview</h2>
+      <h2 style={{marginBottom: 12}}>📊 Overview</h2>
       <div className="grid" style={{marginBottom: 0}}>
         <StatCard label="Total Order Value (COD)" value={"₹" + data.totalOrderValue} tone="var(--up)" />
         <StatCard label="Orders" value={data.orderCount} />
@@ -501,7 +521,7 @@ function OrderManager({ bump }) {
 
   return (
     <div className="panel full-width">
-      <h2>Manage orders</h2>
+      <h2>🧾 Manage Orders</h2>
       {message && <div className={"result-msg " + (message.ok ? "success" : "error")}>{message.text}</div>}
       {data && data.source && <div style={{marginBottom: 8}}><span className={"source-tag " + data.source}>served from {data.source} ({data.node})</span></div>}
       {data && data.rows && (
@@ -548,7 +568,7 @@ function UserManager({ bump }) {
 
   return (
     <div className="panel">
-      <h2>Manage users</h2>
+      <h2>👤 Manage Users</h2>
       {message && <div className={"result-msg " + (message.ok ? "success" : "error")}>{message.text}</div>}
       {data && data.rows && (
         <table>
@@ -572,14 +592,14 @@ function UserManager({ bump }) {
 
 function AdminView() {
   const [refreshKey, setRefreshKey] = useState2(0);
-  const [adminTab, setAdminTab] = useState2("overview"); // overview | products | orders | users
+  const [adminTab, setAdminTab] = useState2("overview");
   const bump = () => setRefreshKey(k => k + 1);
 
   const TABS = [
-    { id: "overview", label: "Overview" },
-    { id: "products", label: "Products" },
-    { id: "orders", label: "Orders" },
-    { id: "users", label: "Users" },
+    { id: "overview", label: "📊 Overview" },
+    { id: "products", label: "📦 Products" },
+    { id: "orders", label: "🧾 Orders" },
+    { id: "users", label: "👤 Users" },
   ];
 
   return (

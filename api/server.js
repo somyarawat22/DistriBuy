@@ -22,8 +22,8 @@ const REPLICA_OF = {
   orders: 'users',
 };
 
-const PG_USER = 'postgres';
-const PG_PASSWORD = 'kvara';
+const PG_USER = '';
+const PG_PASSWORD = '';
 
 const pools = {};
 for (const [domain, cfg] of Object.entries(NODES)) {
@@ -53,7 +53,6 @@ async function routedQuery(domain) {
   throw new Error(`${domain} is unreachable and no live replica was found`);
 }
 
-// One-time migrations (safe to run repeatedly — IF NOT EXISTS).
 (async () => {
   try {
     await pools.users.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT;');
@@ -64,7 +63,6 @@ async function routedQuery(domain) {
   }
 })();
 
-// --- Auth ---
 const ADMIN_USERNAME = 'admin';
 const ADMIN_PASSWORD_HASH = bcrypt.hashSync('admin123', 10);
 const sessions = new Map();
@@ -151,10 +149,6 @@ app.get('/health', async (req, res) => {
   res.json({ nodes: status, reachable: `${aliveCount}/${total}`, quorum, cluster_available: aliveCount >= quorum });
 });
 
-// --- Users ---
-// Admin-only, and only an explicit allow-list of columns is returned. This
-// endpoint used to be public and ran SELECT *, so it exposed every user's
-// email AND their bcrypt `password` hash to anyone who called it.
 app.get('/users', requireAdmin, async (req, res) => {
   try {
     const result = await routedQuery('users');
@@ -174,8 +168,6 @@ app.post('/users', requireAdmin, async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
-
-// --- Products (full CRUD for admin; read is public) ---
 app.get('/products', async (req, res) => {
   try { res.json(await routedQuery('products')); }
   catch (e) { res.status(503).json({ error: e.message }); }
@@ -211,18 +203,10 @@ app.delete('/products/:id', requireAdmin, async (req, res) => {
   try {
     const result = await pools.products.query('DELETE FROM products WHERE id = $1 RETURNING id', [id]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'Product not found' });
-    // Note: orders.product_id is intentionally not a foreign key (see
-    // docs/partitioning.md — cross-node FKs aren't enforceable by Postgres
-    // here), so existing orders referencing a deleted product are left as-is.
     res.json({ ok: true, deletedId: result.rows[0].id });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// --- Orders ---
-// Requires login: an admin sees every order (needed for the Order Manager
-// dashboard), but a consumer only ever sees their own orders — this also
-// closes a previous gap where this endpoint was public and unauthenticated,
-// exposing every customer's delivery address to anyone who called it.
 app.get('/orders', requireAuth, async (req, res) => {
   try {
     const result = await routedQuery('orders');
@@ -294,11 +278,6 @@ app.post('/orders', requireAuth, async (req, res) => {
   }
 });
 
-// --- Order status management (admin-only) ---
-// This is a single-node update (only the Orders node's own row changes),
-// so it does NOT go through 2PC — unlike placing an order, which touches
-// both Orders and Products and needs that atomicity guarantee. Updating
-// a status field here never needs a second node to agree.
 const VALID_ORDER_STATUSES = ['pending', 'shipped', 'delivered', 'cancelled'];
 
 app.patch('/orders/:id', requireAdmin, async (req, res) => {
@@ -314,25 +293,16 @@ app.patch('/orders/:id', requireAdmin, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// --- User deletion (admin-only) ---
 app.delete('/users/:id', requireAdmin, async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pools.users.query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
-    // Note: orders.user_id is not a foreign key (cross-node, same reasoning
-    // as products — see docs/partitioning.md), so existing orders placed by
-    // a deleted user are left as historical records, not cascaded.
+
     res.json({ ok: true, deletedId: result.rows[0].id });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// --- Admin dashboard stats: a genuine cross-node aggregation ---
-// No single node has both order quantities (Orders node) and product
-// prices (Products node), so computing "total order value" requires the
-// API layer to pull from both and join them in memory — a small, honest
-// example of the kind of work a Coordinator does that a single database
-// instance wouldn't need to.
 app.get('/admin/stats', requireAdmin, async (req, res) => {
   try {
     const [ordersResult, productsResult, usersResult] = await Promise.all([
@@ -369,4 +339,4 @@ app.get('/admin/stats', requireAdmin, async (req, res) => {
   }
 });
 
-app.listen(PORT, () => console.log(`ShardCore API listening on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`Distribuy API listening on http://localhost:${PORT}`));

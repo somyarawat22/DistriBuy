@@ -1,4 +1,5 @@
-#ifndef SHARDCORE_CLUSTER_H
+
+ifndef SHARDCORE_CLUSTER_H
 #define SHARDCORE_CLUSTER_H
 
 #include <string>

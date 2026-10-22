@@ -87,3 +87,12 @@ struct LivenessInfo {
         has_heartbeat = true;
     }
 };
+
+const long HEARTBEAT_TIMEOUT_SECONDS = 10;
+
+bool is_alive(const LivenessInfo& liveness, long now) {
+    if (!liveness.has_heartbeat) {
+        return false;
+    }
+    return (now - liveness.last_heartbeat_time) <= HEARTBEAT_TIMEOUT_SECONDS;
+}

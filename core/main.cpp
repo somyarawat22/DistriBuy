@@ -96,3 +96,19 @@ bool is_alive(const LivenessInfo& liveness, long now) {
     }
     return (now - liveness.last_heartbeat_time) <= HEARTBEAT_TIMEOUT_SECONDS;
 }
+
+struct Node {
+    NodeConfig config;
+    std::vector<NodeConfig> peers;
+
+    bool is_valid() const {
+        return config.is_valid() && peers_are_valid(config, peers);
+    }
+
+    std::vector<std::string> peer_endpoints() const {
+        std::vector<std::string> endpoints;
+        for (const auto& peer : peers) {
+            endpoints.push_back(peer.endpoint());
+        }
+        return endpoints;
+    }

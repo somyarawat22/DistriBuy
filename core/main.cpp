@@ -112,3 +112,11 @@ struct Node {
         }
         return endpoints;
     }
+
+ std::string summary() const {
+        std::string result = "Node " + std::to_string(config.node_id) +
+                             " (" + config.endpoint() + ") with " +
+                             std::to_string(peers.size()) + " peer(s)";
+        return result;
+    }
+};

@@ -120,3 +120,15 @@ struct Node {
         return result;
     }
 };
+struct ClusterMetadata {
+    std::vector<NodeConfig> nodes;
+
+    const NodeConfig* find_by_domain(NodeDomain domain) const {
+        for (const auto& candidate : nodes) {
+            if (candidate.domain == domain) {
+                return &candidate;
+            }
+        }
+        return nullptr;
+    }
+};

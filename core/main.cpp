@@ -132,3 +132,32 @@ struct ClusterMetadata {
         return nullptr;
     }
 };
+struct ReplicaMap {
+    std::unordered_map<NodeDomain, NodeDomain> replication;
+
+    void add(NodeDomain owner, NodeDomain replica) {
+        replication[owner] = replica;
+    }
+};
+
+// --- NEW: PgStore replaces the old in-memory Store. It wraps a real ---
+// --- libpqxx connection to this node's own PostgreSQL cluster.       ---
+class PgStore {
+public:
+    // Builds the connection string and opens a real TCP connection to
+    // this node's Postgres instance (e.g. host=127.0.0.1 port=5433).
+    PgStore(const std::string& host, int port,
+            const std::string& user, const std::string& password,
+            const std::string& dbname = "postgres") {
+        std::string conn_str =
+            "host=" + host +
+            " port=" + std::to_string(port) +
+            " user=" + user +
+            " password=" + password +
+            " dbname=" + dbname;
+        conn_ = std::make_unique<pqxx::connection>(conn_str);
+    }
+
+    bool is_open() const {
+        return conn_ && conn_->is_open();
+    }

@@ -1,4 +1,4 @@
-#include <iostream>
+5#include <iostream>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -160,4 +160,18 @@ public:
 
     bool is_open() const {
         return conn_ && conn_->is_open();
+    }
+  
+// Runs a single INSERT/UPDATE/DELETE statement inside its own
+    // transaction and commits it. Returns true on success.
+    bool execute(const std::string& sql) {
+        try {
+            pqxx::work txn(*conn_);
+            txn.exec(sql);
+            txn.commit();
+            return true;
+        } catch (const std::exception& e) {
+            std::cerr << "PgStore execute error: " << e.what() << '\n';
+            return false;
+        }
     }

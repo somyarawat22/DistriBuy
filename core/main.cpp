@@ -1,4 +1,4 @@
-5#include <iostream>
+#include <iostream>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -30,7 +30,6 @@ const char* domain_name(NodeDomain domain) {
     }
     return "Unknown";
 }
-
 const char* tx_state_name(TxState state) {
     switch (state) {
         case TxState::Begin:
@@ -42,20 +41,21 @@ const char* tx_state_name(TxState state) {
     }
     return "unknown";
 }
-
 struct NodeConfig {
     int node_id;
     std::string host;
     int port;
     NodeDomain domain;
+
+
     bool is_valid() const {
         return node_id > 0 && !host.empty() && port > 0 && port <= 65535;
     }
-
     std::string endpoint() const {
         return host + ':' + std::to_string(port);
     }
 };
+
 
 const NodeConfig* find_peer(const std::vector<NodeConfig>& peers, int node_id) {
     for (const NodeConfig& peer : peers) {
@@ -65,7 +65,6 @@ const NodeConfig* find_peer(const std::vector<NodeConfig>& peers, int node_id) {
     }
     return nullptr;
 }
-
 bool peers_are_valid(const NodeConfig& local,
                      const std::vector<NodeConfig>& peers) {
     std::unordered_set<int> peer_ids;
@@ -77,34 +76,29 @@ bool peers_are_valid(const NodeConfig& local,
     }
     return true;
 }
-
 struct LivenessInfo {
     long last_heartbeat_time = 0;
     bool has_heartbeat = false;
-
     void mark_alive(long now) {
         last_heartbeat_time = now;
         has_heartbeat = true;
     }
 };
-
 const long HEARTBEAT_TIMEOUT_SECONDS = 10;
-
 bool is_alive(const LivenessInfo& liveness, long now) {
     if (!liveness.has_heartbeat) {
         return false;
     }
     return (now - liveness.last_heartbeat_time) <= HEARTBEAT_TIMEOUT_SECONDS;
 }
-
 struct Node {
     NodeConfig config;
     std::vector<NodeConfig> peers;
 
+
     bool is_valid() const {
         return config.is_valid() && peers_are_valid(config, peers);
     }
-
     std::vector<std::string> peer_endpoints() const {
         std::vector<std::string> endpoints;
         for (const auto& peer : peers) {
@@ -112,8 +106,7 @@ struct Node {
         }
         return endpoints;
     }
-
- std::string summary() const {
+    std::string summary() const {
         std::string result = "Node " + std::to_string(config.node_id) +
                              " (" + config.endpoint() + ") with " +
                              std::to_string(peers.size()) + " peer(s)";
@@ -122,7 +115,6 @@ struct Node {
 };
 struct ClusterMetadata {
     std::vector<NodeConfig> nodes;
-
     const NodeConfig* find_by_domain(NodeDomain domain) const {
         for (const auto& candidate : nodes) {
             if (candidate.domain == domain) {
@@ -134,12 +126,10 @@ struct ClusterMetadata {
 };
 struct ReplicaMap {
     std::unordered_map<NodeDomain, NodeDomain> replication;
-
     void add(NodeDomain owner, NodeDomain replica) {
         replication[owner] = replica;
     }
 };
-
 // --- NEW: PgStore replaces the old in-memory Store. It wraps a real ---
 // --- libpqxx connection to this node's own PostgreSQL cluster.       ---
 class PgStore {
@@ -157,12 +147,10 @@ public:
             " dbname=" + dbname;
         conn_ = std::make_unique<pqxx::connection>(conn_str);
     }
-
     bool is_open() const {
         return conn_ && conn_->is_open();
     }
-  
-// Runs a single INSERT/UPDATE/DELETE statement inside its own
+    // Runs a single INSERT/UPDATE/DELETE statement inside its own
     // transaction and commits it. Returns true on success.
     bool execute(const std::string& sql) {
         try {
@@ -175,3 +163,24 @@ public:
             return false;
         }
     }
+    // Runs a SELECT and returns the number of rows found. Prints each
+    // row's columns for now (useful for quick verification/demo output).
+    std::size_t query_and_print(const std::string& sql) {
+        try {
+            pqxx::work txn(*conn_);
+            pqxx::result r = txn.exec(sql);
+            for (const auto& row : r) {
+                std::string line;
+                for (const auto& field : row) {
+                    line += field.c_str();
+                    line += " | ";
+                }
+                std::cout << "  " << line << '\n';
+            }
+            return r.size();
+        } catch (const std::exception& e) {
+            std::cerr << "PgStore query error: " << e.what() << '\n';
+            return 0;
+        }
+    }
+

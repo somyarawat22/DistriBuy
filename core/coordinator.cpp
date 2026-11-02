@@ -82,3 +82,18 @@ public:
             return 0;
         }
     }
+    std::size_t query_domain_table() {
+        return query_table(table_for_domain(config_.domain));
+    }
+
+private:
+    NodeConfig config_;
+    std::string conn_str_;
+    std::unique_ptr<pqxx::connection> conn_;
+    bool alive_ = false;
+};
+
+class Coordinator {
+public:
+    explicit Coordinator(const ClusterMetadata& metadata)
+        : replica_map_(build_replica_map()) {

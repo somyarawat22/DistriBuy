@@ -111,3 +111,28 @@ public:
             std::cerr << "No node registered for domain " << domain_name(domain) << '\n';
             return;
         }
+        NodeConnection& primary = *it->second;
+        std::cout << "Routing to " << domain_name(domain) << " node ("
+                   << primary.config().endpoint() << ")\n";
+
+        if (primary.is_alive()) {
+            std::cout << "  Status: reachable (primary)\n";
+            std::size_t rows = primary.query_domain_table();
+            std::cout << "  Rows returned: " << rows << '\n';
+            return;
+        }
+
+        std::cout << "  Status: PRIMARY UNREACHABLE - attempting failover...\n";
+        auto replica_domain_it = replica_map_.find(domain);
+        if (replica_domain_it == replica_map_.end()) {
+            std::cout << "  No replica configured for " << domain_name(domain) << ". Read failed.\n";
+            return;
+        }
+
+        NodeDomain replica_domain = replica_domain_it->second;
+        auto replica_conn_it = connections_.find(replica_domain);
+        if (replica_conn_it == connections_.end() || !replica_conn_it->second->is_alive()) {
+            std::cout << "  Replica node (" << domain_name(replica_domain)
+                       << "'s node) is ALSO unreachable. Read failed - no surviving copy.\n";
+            return;
+        }

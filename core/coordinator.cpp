@@ -20,3 +20,14 @@ public:
             " dbname=postgres";
         try_reconnect();
         }      
+    bool try_reconnect() {
+        try {
+            conn_ = std::make_unique<pqxx::connection>(conn_str_);
+            alive_ = true;
+            return true;
+        } catch (const std::exception&) {
+            conn_.reset();
+            alive_ = false;
+            return false;
+        }
+    }

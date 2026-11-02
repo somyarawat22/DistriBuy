@@ -64,3 +64,21 @@ public:
             std::cerr << "  [ERROR] Node " << config_.node_id << " is not connected.\n";
             return 0;
         }
+        try {
+            pqxx::work txn(*conn_);
+            pqxx::result r = txn.exec("SELECT * FROM " + table + ";");
+            for (const auto& row : r) {
+                std::string line;
+                for (const auto& field : row) {
+                    line += field.c_str();
+                    line += " | ";
+                }
+                std::cout << "    " << line << '\n';
+            }
+            return r.size();
+        } catch (const std::exception& e) {
+            std::cerr << "  [ERROR] Query failed on node " << config_.node_id
+                       << ": " << e.what() << '\n';
+            return 0;
+        }
+    }

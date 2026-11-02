@@ -51,3 +51,16 @@ public:
     bool is_alive() const {
         return alive_;
     }
+    const NodeConfig& config() const {
+        return config_;
+    }
+
+    pqxx::connection& raw_connection() {
+        return *conn_;
+    }
+
+    std::size_t query_table(const std::string& table) {
+        if (!is_alive()) {
+            std::cerr << "  [ERROR] Node " << config_.node_id << " is not connected.\n";
+            return 0;
+        }

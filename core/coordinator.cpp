@@ -97,3 +97,17 @@ class Coordinator {
 public:
     explicit Coordinator(const ClusterMetadata& metadata)
         : replica_map_(build_replica_map()) {
+        for (const auto& node_config : metadata.nodes) {
+            connections_.emplace(
+                node_config.domain,
+                std::make_unique<NodeConnection>(node_config, PG_USER, PG_PASSWORD)
+            );
+        }
+    }
+
+    void route_and_query(NodeDomain domain) {
+        auto it = connections_.find(domain);
+        if (it == connections_.end()) {
+            std::cerr << "No node registered for domain " << domain_name(domain) << '\n';
+            return;
+        }

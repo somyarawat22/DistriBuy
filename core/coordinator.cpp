@@ -31,3 +31,23 @@ public:
             return false;
         }
     }
+    bool ping() {
+        if (!conn_ || !conn_->is_open()) {
+            alive_ = try_reconnect();
+            if (!alive_) {
+                return false;
+            }
+        }
+        try {
+            pqxx::nontransaction n(*conn_);
+            n.exec("SELECT 1");
+            alive_ = true;
+        } catch (const std::exception&) {
+            alive_ = false;
+        }
+        return alive_;
+    }
+
+    bool is_alive() const {
+        return alive_;
+    }

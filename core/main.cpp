@@ -184,3 +184,25 @@ public:
         }
     }
 
+private:
+    std::unique_ptr<pqxx::connection> conn_;
+};
+// --- END NEW ---
+
+struct LogEntry {
+    std::string key;
+    std::string value;
+    long timestamp;
+};
+struct TransactionLog {
+    std::vector<LogEntry> entries;
+    void record(const std::string& key, const std::string& value) {
+        entries.push_back({key, value, (long)std::time(nullptr)});
+    }
+    std::size_t size() const {
+        return entries.size();
+    }
+    std::string last_key() const {
+        return entries.empty() ? "" : entries.back().key;
+    }
+};

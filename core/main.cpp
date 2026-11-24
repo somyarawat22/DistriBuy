@@ -21,3 +21,15 @@ std::string pg_password_env() {
     }
     return v;
 }
+enum class NodeState { Starting, Ready };
+enum class NodeDomain { Users, Products, Orders };
+enum class TxState { Begin, Commit, Abort };
+const char* state_name(NodeState state) {
+    switch (state) {
+        case NodeState::Starting:
+            return "starting";
+        case NodeState::Ready:
+            return "ready";
+    }
+    return "unknown";
+}

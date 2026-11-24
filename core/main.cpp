@@ -33,3 +33,14 @@ const char* state_name(NodeState state) {
     }
     return "unknown";
 }
+const char* domain_name(NodeDomain domain) {
+    switch (domain) {
+        case NodeDomain::Users:
+            return "Users";
+        case NodeDomain::Products:
+            return "Products";
+        case NodeDomain::Orders:
+            return "Orders";
+    }
+    return "Unknown";
+}
